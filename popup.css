@@ -1,0 +1,234 @@
+/* =============================================================
+   popup.css — Styles for "Save to Google Docs" Popup
+   ============================================================= */
+
+/* --- Reset & Base --- */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+  width: 320px;
+  min-height: 200px;
+}
+
+/* --- Container --- */
+
+.container {
+  padding: 16px;
+}
+
+/* --- Header --- */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.logo {
+  width: 32px;
+  height: 32px;
+}
+
+.header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* --- Sections --- */
+
+.section {
+  margin-bottom: 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --- Auth Status --- */
+
+.status {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.status.connected {
+  color: #34a853;
+  font-weight: 500;
+}
+
+/* --- Buttons --- */
+
+.btn {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn:active {
+  opacity: 0.8;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: #4285f4;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #3367d6;
+}
+
+.btn-secondary {
+  background-color: #f1f3f4;
+  color: #333;
+  margin-top: 8px;
+}
+
+.btn-secondary:hover {
+  background-color: #e2e5e8;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #888;
+  border: 1px solid #ddd;
+  font-size: 12px;
+  padding: 8px 12px;
+}
+
+.btn-outline:hover {
+  background-color: #f9f9f9;
+  color: #555;
+}
+
+/* --- Doc Info --- */
+
+.doc-info {
+  background: #f8faf8;
+  border: 1px solid #e0e8e0;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.doc-info label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+}
+
+.doc-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 4px 0;
+}
+
+.doc-link {
+  font-size: 12px;
+  color: #4285f4;
+  text-decoration: none;
+}
+
+.doc-link:hover {
+  text-decoration: underline;
+}
+
+/* --- Input Group --- */
+
+.input-group {
+  margin-bottom: 4px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #4285f4;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
+}
+
+.input-group input::placeholder {
+  color: #bbb;
+}
+
+/* --- Divider --- */
+
+.divider {
+  height: 1px;
+  background: #e8e8e8;
+  margin: 14px 0;
+}
+
+/* --- Message / Feedback --- */
+
+.message {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.message.success {
+  background: #e6f4ea;
+  color: #1e7e34;
+  border: 1px solid #c3e6cb;
+}
+
+.message.error {
+  background: #fce8e6;
+  color: #c62828;
+  border: 1px solid #f5c6cb;
+}
+
+.message.info {
+  background: #e8f0fe;
+  color: #1a56db;
+  border: 1px solid #bee1f6;
+}
