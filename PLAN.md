@@ -66,17 +66,19 @@ chrome-extension-copy-to-file/
 
 ### Phase 1 — MVP
 
-- [ ] Context menu "Save to Google Docs"
-- [ ] Google OAuth 2.0 authentication
-- [ ] Append selected text to a single Google Doc
-- [ ] Include source URL and timestamp with each snippet
-- [ ] Success/error notification
+- [x] Context menu "Save to Google Docs"
+- [x] Google OAuth 2.0 authentication
+- [x] Append selected text to a single Google Doc
+- [x] Include source URL and timestamp with each snippet
+- [x] Success/error notification
+- [ ] Google Cloud project setup & OAuth Client ID
+- [ ] End-to-end testing in Chrome
 
 ### Phase 2 — Enhancements
 
-- [ ] Choose which Google Doc to save to
-- [ ] Create a new doc from popup
-- [ ] Organize saved texts with headings/horizontal dividers
+- [x] Choose which Google Doc to save to
+- [x] Create a new doc from popup
+- [x] Organize saved texts with headings/horizontal dividers
 - [ ] Keyboard shortcut (e.g., `Ctrl+Shift+S`)
 - [ ] Floating "Save" button near text selection
 
@@ -102,35 +104,52 @@ chrome-extension-copy-to-file/
 
 ## 📝 Implementation Steps
 
-### Step 1 — Google Cloud Project Setup
-- Create project, enable APIs, get OAuth Client ID
+### Step 1 — Google Cloud Project Setup ⏳
+- [ ] Create project, enable APIs, get OAuth Client ID
+- [ ] Replace placeholder in `manifest.json`
 
-### Step 2 — Scaffold Extension
-- Create all files with boilerplate code
-- Set up manifest.json with permissions and OAuth config
+### Step 2 — Scaffold Extension ✅
+- [x] `manifest.json` — Manifest V3 with permissions & OAuth config
+- [x] `background.js` — Service worker (context menu + Docs API)
+- [x] `content.js` — Content script (toast notifications)
+- [x] `utils/google-docs.js` — Google Docs API helpers
+- [x] `popup.html` — Popup UI structure
+- [x] `popup.css` — Popup styling
+- [x] `popup.js` — Popup logic (auth, doc config)
+- [x] `icons/` — Extension icons (16, 48, 128px)
 
-### Step 3 — Implement Auth Flow
-- Wire up `chrome.identity.getAuthToken`
-- Handle login/logout in popup
+### Step 3 — Implement Auth Flow ✅
+- [x] Wire up `chrome.identity.getAuthToken`
+- [x] Handle login/logout in popup
+- [x] Token revocation on sign-out
 
-### Step 4 — Build Context Menu + Save Logic
-- Register context menu in background.js
-- Capture selected text via content.js
-- Append to Google Doc via Docs API
+### Step 4 — Build Context Menu + Save Logic ✅
+- [x] Register context menu in background.js
+- [x] Capture selected text via context menu selection
+- [x] Append to Google Doc via Docs API
+- [x] Include timestamp and source URL
 
-### Step 5 — Build Popup UI
-- Show auth status
-- Allow user to set/change target Google Doc
-- Show recent save history
+### Step 5 — Build Popup UI ✅
+- [x] Show auth status
+- [x] Allow user to set/change target Google Doc
+- [x] Create new Google Doc from popup
+- [ ] Show recent save history
 
-### Step 6 — Polish & Test
-- Error handling
-- Edge cases (no text selected, auth expired, etc.)
-- Icons and branding
+### Step 6 — Polish & Test ⏳
+- [x] Error handling (auth, API, no doc configured)
+- [ ] Edge cases (no text selected, auth expired, etc.)
+- [x] Icons and branding
+- [ ] Load unpacked in Chrome and test end-to-end
 
 ---
 
 ## 📌 Status
 
-**Current Phase:** Planning  
+**Current Phase:** Scaffolding complete — ready for Google Cloud setup & testing  
 **Last Updated:** March 8, 2026
+
+### Next Steps
+1. Set up Google Cloud project & get OAuth Client ID
+2. Replace `YOUR_CLIENT_ID` in `manifest.json`
+3. Load unpacked extension in Chrome (`chrome://extensions`)
+4. Test end-to-end: select text → right-click → save to Google Docs
