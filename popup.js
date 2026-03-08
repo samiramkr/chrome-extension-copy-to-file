@@ -27,6 +27,9 @@ const createDocBtn = document.getElementById("create-doc-btn");
 const signoutBtn = document.getElementById("signout-btn");
 const messageEl = document.getElementById("message");
 
+const historyList = document.getElementById("history-list");
+const clearHistoryBtn = document.getElementById("clear-history-btn");
+
 // --- Initialize ---
 
 document.addEventListener("DOMContentLoaded", init);
@@ -153,6 +156,9 @@ async function showConnectedState(token) {
       updateDocInfoUI(result.targetDocTitle || "Untitled", result.targetDocId);
     }
   });
+
+  // Load save history
+  loadHistory();
 }
 
 function showSignedOutState() {
@@ -207,4 +213,70 @@ function showMessage(type, text) {
   setTimeout(() => {
     messageEl.classList.add("hidden");
   }, 4000);
+}
+
+// --- History ---
+
+function loadHistory() {
+  chrome.storage.local.get(["saveHistory"], (result) => {
+    const history = result.saveHistory || [];
+    renderHistory(history);
+  });
+}
+
+function renderHistory(history) {
+  if (history.length === 0) {
+    historyList.innerHTML = '<p class="history-empty">No saved snippets yet.</p>';
+    return;
+  }
+
+  historyList.innerHTML = history
+    .map((entry) => {
+      const time = formatTimeAgo(new Date(entry.timestamp));
+      const hostname = getHostname(entry.url);
+      return `
+        <div class="history-item">
+          <div class="history-item-text">${escapeHtml(entry.text)}</div>
+          <div class="history-item-meta">
+            <a class="history-item-url" href="${escapeHtml(entry.url)}" target="_blank" title="${escapeHtml(entry.url)}">${escapeHtml(hostname)}</a>
+            <span class="history-item-time">${time}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+clearHistoryBtn.addEventListener("click", () => {
+  chrome.storage.local.set({ saveHistory: [] }, () => {
+    renderHistory([]);
+    showMessage("info", "History cleared.");
+  });
+});
+
+// --- Utility Helpers ---
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function getHostname(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url;
+  }
+}
+
+function formatTimeAgo(date) {
+  const now = new Date();
+  const diff = Math.floor((now - date) / 1000);
+
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return date.toLocaleDateString();
 }

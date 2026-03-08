@@ -40,6 +40,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     }
 
     await appendToDoc(token, docId, selectedText, tab.url);
+    saveToHistory(selectedText, tab.url);
     notify("✅ Text saved to Google Docs!");
   } catch (error) {
     console.error("Save to Google Docs failed:", error);
@@ -78,6 +79,7 @@ chrome.commands.onCommand.addListener(async (command) => {
 
     await appendToDoc(token, docId, selectedText, tab.url);
     notify("✅ Text saved to Google Docs!");
+    saveToHistory(selectedText, tab.url);
   } catch (error) {
     console.error("Save to Google Docs failed:", error);
     notify(`❌ Failed to save: ${error.message}`);
@@ -145,6 +147,26 @@ function getTargetDocId() {
   });
 }
 
+/**
+ * Save a snippet to history in chrome.storage.local.
+ * Keeps the last 20 entries.
+ */
+function saveToHistory(text, url) {
+  const entry = {
+    text: text.length > 100 ? text.substring(0, 100) + "…" : text,
+    url,
+    timestamp: new Date().toISOString(),
+  };
+
+  chrome.storage.local.get(["saveHistory"], (result) => {
+    const history = result.saveHistory || [];
+    history.unshift(entry);
+    // Keep only last 20
+    if (history.length > 20) history.length = 20;
+    chrome.storage.local.set({ saveHistory: history });
+  });
+}
+
 // --- Notifications ---
 
 function notify(message) {
@@ -179,6 +201,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           return;
         }
         await appendToDoc(token, docId, request.text, request.url);
+        saveToHistory(request.text, request.url);
         sendResponse({ success: true });
       } catch (error) {
         sendResponse({ success: false, error: error.message });
