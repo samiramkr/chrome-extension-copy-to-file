@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Save to Google Docs</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <img src="icons/icon48.png" alt="Logo" class="logo" />
+      <h1>Save to Google Docs</h1>
+    </div>
+
+    <!-- Auth Section -->
+    <div id="auth-section" class="section">
+      <p class="status" id="auth-status">Not connected</p>
+      <button id="auth-btn" class="btn btn-primary">Sign in with Google</button>
+    </div>
+
+    <!-- Connected Section (hidden by default) -->
+    <div id="connected-section" class="section hidden">
+      <!-- Current Doc Info -->
+      <div id="doc-info" class="doc-info hidden">
+        <label>Saving to:</label>
+        <p id="doc-title" class="doc-title">—</p>
+        <a id="doc-link" href="#" target="_blank" class="doc-link">Open in Google Docs ↗</a>
+      </div>
+
+      <!-- Set Target Doc -->
+      <div class="input-group">
+        <label for="doc-input">Google Doc URL or ID:</label>
+        <input
+          type="text"
+          id="doc-input"
+          placeholder="Paste Google Doc URL or document ID"
+        />
+        <button id="save-doc-btn" class="btn btn-secondary">Connect Doc</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Create New Doc -->
+      <div class="input-group">
+        <label for="new-doc-title">Or create a new doc:</label>
+        <input
+          type="text"
+          id="new-doc-title"
+          placeholder="My Saved Snippets"
+        />
+        <button id="create-doc-btn" class="btn btn-secondary">Create Doc</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Sign Out -->
+      <button id="signout-btn" class="btn btn-outline">Sign Out</button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="message" class="message hidden"></div>
+  </div>
+
+  <script src="utils/google-docs.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
