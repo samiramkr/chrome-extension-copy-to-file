@@ -4,8 +4,9 @@
 // Responsibilities:
 //   1. Register right-click context menu
 //   2. Listen for context menu clicks
-//   3. Get OAuth token via chrome.identity
-//   4. Append selected text to Google Doc via Docs API
+//   3. Listen for keyboard shortcut (Ctrl+Shift+S / Cmd+Shift+S)
+//   4. Get OAuth token via chrome.identity
+//   5. Append selected text to Google Doc via Docs API
 // =============================================================
 
 // --- Context Menu Setup ---
@@ -24,6 +25,43 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== "save-to-google-docs") return;
 
   const selectedText = info.selectionText;
+  if (!selectedText) {
+    notify("No text selected.");
+    return;
+  }
+
+  try {
+    const token = await getAuthToken();
+    const docId = await getTargetDocId();
+
+    if (!docId) {
+      notify("No Google Doc configured. Click the extension icon to set one up.");
+      return;
+    }
+
+    await appendToDoc(token, docId, selectedText, tab.url);
+    notify("✅ Text saved to Google Docs!");
+  } catch (error) {
+    console.error("Save to Google Docs failed:", error);
+    notify(`❌ Failed to save: ${error.message}`);
+  }
+});
+
+// --- Keyboard Shortcut Handler ---
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "save-selection") return;
+
+  // Get the selected text from the active tab
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return;
+
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => window.getSelection().toString(),
+  });
+
+  const selectedText = result?.result;
   if (!selectedText) {
     notify("No text selected.");
     return;
