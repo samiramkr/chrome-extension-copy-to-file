@@ -30,6 +30,9 @@ const messageEl = document.getElementById("message");
 const historyList = document.getElementById("history-list");
 const clearHistoryBtn = document.getElementById("clear-history-btn");
 
+const toggleUrl = document.getElementById("toggle-url");
+const toggleTimestamp = document.getElementById("toggle-timestamp");
+
 // --- Initialize ---
 
 document.addEventListener("DOMContentLoaded", init);
@@ -159,6 +162,12 @@ async function showConnectedState(token) {
 
   // Load save history
   loadHistory();
+
+  // Load toggle preferences (default: both enabled)
+  chrome.storage.sync.get(["includeUrl", "includeTimestamp"], (result) => {
+    toggleUrl.checked = result.includeUrl !== false;
+    toggleTimestamp.checked = result.includeTimestamp !== false;
+  });
 }
 
 function showSignedOutState() {
@@ -252,6 +261,16 @@ clearHistoryBtn.addEventListener("click", () => {
     renderHistory([]);
     showMessage("info", "History cleared.");
   });
+});
+
+// --- Preference Toggles ---
+
+toggleUrl.addEventListener("change", () => {
+  chrome.storage.sync.set({ includeUrl: toggleUrl.checked });
+});
+
+toggleTimestamp.addEventListener("change", () => {
+  chrome.storage.sync.set({ includeTimestamp: toggleTimestamp.checked });
 });
 
 // --- Utility Helpers ---

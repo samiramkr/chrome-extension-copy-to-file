@@ -103,9 +103,29 @@ function getAuthToken() {
 // --- Google Docs API: Append Text ---
 
 async function appendToDoc(token, docId, text, sourceUrl) {
-  const timestamp = new Date().toLocaleString();
+  // Read user preferences (default: both enabled)
+  const prefs = await new Promise((resolve) => {
+    chrome.storage.sync.get(["includeUrl", "includeTimestamp"], (result) => {
+      resolve({
+        includeUrl: result.includeUrl !== false,
+        includeTimestamp: result.includeTimestamp !== false,
+      });
+    });
+  });
+
   const separator = "\n———————————————————————————\n";
-  const header = `📌 Saved on ${timestamp}\n🔗 ${sourceUrl}\n\n`;
+  let header = "";
+
+  if (prefs.includeTimestamp) {
+    header += `📌 Saved on ${new Date().toLocaleString()}\n`;
+  }
+  if (prefs.includeUrl) {
+    header += `🔗 ${sourceUrl}\n`;
+  }
+  if (header) {
+    header += "\n";
+  }
+
   const content = `${separator}${header}${text}\n`;
 
   const requests = [
