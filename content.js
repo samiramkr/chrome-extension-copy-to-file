@@ -99,6 +99,15 @@ function showFloatingButton(x, y, selectedText) {
     alignItems: "center",
   });
 
+  // Prevent mouse events on the button from triggering
+  // the document-level listeners (which reposition or remove the button)
+  floatingBtn.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+  });
+  floatingBtn.addEventListener("mouseup", (e) => {
+    e.stopPropagation();
+  });
+
   floatingBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
