@@ -15,10 +15,91 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// --- Floating Save Button (two-button pill: Save | Edit) ---
+// --- Floating Save Button (three-button pill: Save | Edit | Translate) ---
 
 let floatingBtn = null;
 let editModal = null;
+
+// --- Shared: Tag Input with Autocomplete ---
+
+const FONT_SHARED = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+function createTagInput(parent) {
+  const wrapper = document.createElement("div");
+  Object.assign(wrapper.style, {
+    position: "relative",
+    marginTop: "12px",
+    marginBottom: "4px",
+  });
+
+  const label = document.createElement("div");
+  label.textContent = "🏷️ Tag:";
+  Object.assign(label.style, {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    marginBottom: "4px",
+  });
+
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "e.g. research, vocab, recipe…";
+  input.setAttribute("list", "gdocs-tag-suggestions");
+  Object.assign(input.style, {
+    width: "100%",
+    padding: "7px 10px",
+    fontSize: "13px",
+    fontFamily: FONT_SHARED,
+    border: "1px solid #ddd",
+    borderRadius: "6px",
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color 0.2s",
+  });
+  input.addEventListener("focus", () => {
+    input.style.borderColor = "#4285F4";
+    input.style.boxShadow = "0 0 0 2px rgba(66, 133, 244, 0.15)";
+  });
+  input.addEventListener("blur", () => {
+    input.style.borderColor = "#ddd";
+    input.style.boxShadow = "none";
+  });
+
+  // Datalist for autocomplete
+  const datalist = document.createElement("datalist");
+  datalist.id = "gdocs-tag-suggestions";
+
+  // Load stored tags
+  chrome.storage.sync.get(["usedTags"], (result) => {
+    const tags = result.usedTags || [];
+    tags.forEach((tag) => {
+      const opt = document.createElement("option");
+      opt.value = tag;
+      datalist.appendChild(opt);
+    });
+  });
+
+  wrapper.appendChild(label);
+  wrapper.appendChild(input);
+  wrapper.appendChild(datalist);
+  parent.appendChild(wrapper);
+
+  return input;
+}
+
+function saveUsedTag(tag) {
+  if (!tag) return;
+  chrome.storage.sync.get(["usedTags"], (result) => {
+    let tags = result.usedTags || [];
+    // Move to front if exists, otherwise prepend
+    tags = tags.filter((t) => t.toLowerCase() !== tag.toLowerCase());
+    tags.unshift(tag);
+    if (tags.length > 20) tags.length = 20;
+    chrome.storage.sync.set({ usedTags: tags });
+  });
+}
 
 document.addEventListener("mouseup", (e) => {
   // Don't reposition if the edit modal is open
@@ -154,26 +235,12 @@ function showFloatingButton(x, y, selectedText) {
     el.addEventListener("mouseup", (e) => e.stopPropagation());
   });
 
-  // Save button click — instant save (same as before)
+  // Save button click — open tag prompt then save
   saveBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    saveBtn.style.backgroundColor = "#34A853";
-    saveBtn.querySelector("span").textContent = "Saving…";
-
-    chrome.runtime.sendMessage(
-      { type: "SAVE_TEXT", text: selectedText, url: window.location.href },
-      (response) => {
-        if (response?.success) {
-          saveBtn.querySelector("span").textContent = "Saved ✓";
-          setTimeout(() => removeFloatingButton(), 800);
-        } else {
-          saveBtn.style.backgroundColor = "#EA4335";
-          saveBtn.querySelector("span").textContent = "Failed";
-          setTimeout(() => removeFloatingButton(), 1500);
-        }
-      }
-    );
+    removeFloatingButton();
+    showTagPrompt(selectedText);
   });
 
   // Edit button click — open edit modal
@@ -208,6 +275,162 @@ function showFloatingButton(x, y, selectedText) {
   requestAnimationFrame(() => {
     floatingBtn.style.opacity = "1";
     floatingBtn.style.transform = "translateY(0)";
+  });
+}
+
+// --- Tag Prompt Mini-Modal ---
+
+function showTagPrompt(selectedText) {
+  removeEditModal();
+
+  editModal = document.createElement("div");
+  editModal.id = "save-to-gdocs-tag-prompt";
+
+  Object.assign(editModal.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100vw",
+    height: "100vh",
+    zIndex: "2147483647",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    opacity: "0",
+    transition: "opacity 0.15s ease",
+  });
+
+  const card = document.createElement("div");
+  Object.assign(card.style, {
+    background: "#fff",
+    borderRadius: "12px",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+    padding: "16px",
+    width: "320px",
+    maxWidth: "90vw",
+    display: "flex",
+    flexDirection: "column",
+    fontFamily: FONT_SHARED,
+  });
+
+  const title = document.createElement("div");
+  title.textContent = "Add a tag";
+  Object.assign(title.style, {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: "4px",
+  });
+
+  const preview = document.createElement("div");
+  preview.textContent = selectedText.length > 80 ? selectedText.substring(0, 80) + "…" : selectedText;
+  Object.assign(preview.style, {
+    fontSize: "12px",
+    color: "#888",
+    marginBottom: "8px",
+    lineHeight: "1.4",
+    fontStyle: "italic",
+  });
+
+  const tagInput = createTagInput(card);
+
+  const btnRow = document.createElement("div");
+  Object.assign(btnRow.style, {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "8px",
+    marginTop: "12px",
+  });
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  Object.assign(cancelBtn.style, {
+    padding: "8px 16px",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: FONT_SHARED,
+    border: "1px solid #ddd",
+    borderRadius: "6px",
+    background: "#fff",
+    color: "#666",
+    cursor: "pointer",
+  });
+
+  const saveNowBtn = document.createElement("button");
+  saveNowBtn.textContent = "Save";
+  Object.assign(saveNowBtn.style, {
+    padding: "8px 20px",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: FONT_SHARED,
+    border: "none",
+    borderRadius: "6px",
+    background: "#4285F4",
+    color: "#fff",
+    cursor: "pointer",
+  });
+
+  cancelBtn.addEventListener("click", () => removeEditModal());
+
+  saveNowBtn.addEventListener("click", () => {
+    const tag = tagInput.value.trim();
+    if (tag) saveUsedTag(tag);
+
+    saveNowBtn.textContent = "Saving…";
+    saveNowBtn.disabled = true;
+    saveNowBtn.style.opacity = "0.7";
+
+    chrome.runtime.sendMessage(
+      { type: "SAVE_TEXT", text: selectedText, url: window.location.href, tag },
+      (response) => {
+        if (response?.success) {
+          saveNowBtn.textContent = "Saved ✓";
+          saveNowBtn.style.backgroundColor = "#34A853";
+          setTimeout(() => removeEditModal(), 600);
+          showToast("✅ Text saved to Google Docs!");
+        } else {
+          saveNowBtn.textContent = "Failed";
+          saveNowBtn.style.backgroundColor = "#EA4335";
+          saveNowBtn.style.opacity = "1";
+          saveNowBtn.disabled = false;
+          setTimeout(() => {
+            saveNowBtn.textContent = "Save";
+            saveNowBtn.style.backgroundColor = "#4285F4";
+          }, 1500);
+        }
+      }
+    );
+  });
+
+  // Keyboard: Enter to save, Escape to cancel
+  tagInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveNowBtn.click();
+    }
+    if (e.key === "Escape") {
+      removeEditModal();
+    }
+  });
+
+  editModal.addEventListener("mousedown", (e) => e.stopPropagation());
+  editModal.addEventListener("mouseup", (e) => e.stopPropagation());
+  editModal.addEventListener("click", (e) => {
+    if (e.target === editModal) removeEditModal();
+  });
+
+  card.insertBefore(title, card.firstChild);
+  card.insertBefore(preview, card.children[1]);
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(saveNowBtn);
+  card.appendChild(btnRow);
+  editModal.appendChild(card);
+  document.body.appendChild(editModal);
+
+  requestAnimationFrame(() => {
+    editModal.style.opacity = "1";
+    tagInput.focus();
   });
 }
 
@@ -297,6 +520,9 @@ function showEditModal(x, y, selectedText) {
     textarea.style.boxShadow = "none";
   });
 
+  // Tag input
+  const editTagInput = createTagInput(card);
+
   // Button row
   const btnRow = document.createElement("div");
   Object.assign(btnRow.style, {
@@ -357,12 +583,15 @@ function showEditModal(x, y, selectedText) {
       return;
     }
 
+    const tag = editTagInput.value.trim();
+    if (tag) saveUsedTag(tag);
+
     modalSaveBtn.textContent = "Saving…";
     modalSaveBtn.style.opacity = "0.7";
     modalSaveBtn.disabled = true;
 
     chrome.runtime.sendMessage(
-      { type: "SAVE_TEXT", text: editedText, url: window.location.href },
+      { type: "SAVE_TEXT", text: editedText, url: window.location.href, tag },
       (response) => {
         if (response?.success) {
           modalSaveBtn.textContent = "Saved ✓";
@@ -384,7 +613,7 @@ function showEditModal(x, y, selectedText) {
   });
 
   // Keyboard: Escape to cancel, Ctrl/Cmd+Enter to save
-  textarea.addEventListener("keydown", (e) => {
+  const onEditKeydown = (e) => {
     if (e.key === "Escape") {
       removeEditModal();
     }
@@ -392,7 +621,9 @@ function showEditModal(x, y, selectedText) {
       e.preventDefault();
       modalSaveBtn.click();
     }
-  });
+  };
+  textarea.addEventListener("keydown", onEditKeydown);
+  editTagInput.addEventListener("keydown", onEditKeydown);
 
   // Prevent events from leaking to the page
   editModal.addEventListener("mousedown", (e) => e.stopPropagation());
@@ -406,7 +637,7 @@ function showEditModal(x, y, selectedText) {
   btnRow.appendChild(cancelBtn);
   btnRow.appendChild(modalSaveBtn);
   card.appendChild(title);
-  card.appendChild(textarea);
+  card.appendChild(textarea);  // tag input already appended by createTagInput
   card.appendChild(btnRow);
   editModal.appendChild(card);
   document.body.appendChild(editModal);
@@ -673,6 +904,9 @@ function showTranslateModal(x, y, selectedText) {
 
   translateNowBtn.addEventListener("click", doTranslate);
 
+  // Tag input
+  const transTagInput = createTagInput(card);
+
   // Button row
   const btnRow = document.createElement("div");
   Object.assign(btnRow.style, {
@@ -731,6 +965,9 @@ function showTranslateModal(x, y, selectedText) {
     e.stopPropagation();
     if (!translatedText) return;
 
+    const tag = transTagInput.value.trim();
+    if (tag) saveUsedTag(tag);
+
     modalSaveBtn.textContent = "Saving…";
     modalSaveBtn.style.opacity = "0.7";
     modalSaveBtn.disabled = true;
@@ -738,7 +975,7 @@ function showTranslateModal(x, y, selectedText) {
     const combinedText = `${selectedText}\n\n🌐 ${translatedLangName} translation:\n${translatedText}`;
 
     chrome.runtime.sendMessage(
-      { type: "SAVE_TEXT", text: combinedText, url: window.location.href },
+      { type: "SAVE_TEXT", text: combinedText, url: window.location.href, tag },
       (response) => {
         if (response?.success) {
           modalSaveBtn.textContent = "Saved ✓";
@@ -785,7 +1022,7 @@ function showTranslateModal(x, y, selectedText) {
   card.appendChild(origLabel);
   card.appendChild(origBox);
   card.appendChild(transLabel);
-  card.appendChild(transBox);
+  card.appendChild(transBox);  // tag input already appended by createTagInput
   card.appendChild(btnRow);
   editModal.appendChild(card);
   document.body.appendChild(editModal);

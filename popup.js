@@ -419,9 +419,12 @@ function renderHistory(history) {
     .map((entry) => {
       const time = formatTimeAgo(new Date(entry.timestamp));
       const hostname = getHostname(entry.url);
+      const tagBadge = entry.tag
+        ? `<span class="history-tag">${escapeHtml(entry.tag)}</span>`
+        : "";
       return `
         <div class="history-item">
-          <div class="history-item-text">${escapeHtml(entry.text)}</div>
+          <div class="history-item-text">${tagBadge}${escapeHtml(entry.text)}</div>
           <div class="history-item-meta">
             <a class="history-item-url" href="${escapeHtml(entry.url)}" target="_blank" title="${escapeHtml(entry.url)}">${escapeHtml(hostname)}</a>
             <span class="history-item-time">${time}</span>

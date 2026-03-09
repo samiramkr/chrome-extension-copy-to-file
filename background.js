@@ -30,7 +30,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  await saveText(selectedText, tab.url);
+  await saveText(selectedText, tab.url, "");
 });
 
 // --- Keyboard Shortcut Handler ---
@@ -53,7 +53,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     return;
   }
 
-  await saveText(selectedText, tab.url);
+  await saveText(selectedText, tab.url, "");
 });
 
 // --- Authentication ---
@@ -72,7 +72,7 @@ function getAuthToken() {
 
 // --- Google Docs API: Append Text ---
 
-async function appendToDoc(token, docId, text, sourceUrl) {
+async function appendToDoc(token, docId, text, sourceUrl, tag) {
   // Read user preferences (default: both enabled)
   const prefs = await new Promise((resolve) => {
     chrome.storage.sync.get(["includeUrl", "includeTimestamp"], (result) => {
@@ -86,6 +86,9 @@ async function appendToDoc(token, docId, text, sourceUrl) {
   const separator = "\n———————————————————————————\n";
   let header = "";
 
+  if (tag) {
+    header += `🏷️ [${tag}]\n`;
+  }
   if (prefs.includeTimestamp) {
     header += `📌 Saved on ${new Date().toLocaleString()}\n`;
   }
@@ -129,7 +132,7 @@ async function appendToDoc(token, docId, text, sourceUrl) {
 
 // --- Central Save Logic ---
 
-async function saveText(text, sourceUrl) {
+async function saveText(text, sourceUrl, tag) {
   try {
     const token = await getAuthToken();
     const docId = await getTargetDocId();
@@ -137,8 +140,8 @@ async function saveText(text, sourceUrl) {
       notify("No Google Doc configured. Click the extension icon to set one up.");
       throw new Error("No Google Doc configured.");
     }
-    await appendToDoc(token, docId, text, sourceUrl);
-    saveToHistory(text, sourceUrl);
+    await appendToDoc(token, docId, text, sourceUrl, tag);
+    saveToHistory(text, sourceUrl, tag);
     notify("✅ Text saved to Google Docs!");
   } catch (error) {
     console.error("Save to Google Docs failed:", error);
@@ -161,10 +164,11 @@ function getTargetDocId() {
  * Save a snippet to history in chrome.storage.local.
  * Keeps the last 20 entries.
  */
-function saveToHistory(text, url) {
+function saveToHistory(text, url, tag) {
   const entry = {
     text: text.length > 100 ? text.substring(0, 100) + "…" : text,
     url,
+    tag: tag || "",
     timestamp: new Date().toISOString(),
   };
 
@@ -204,7 +208,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "SAVE_TEXT") {
     (async () => {
       try {
-        await saveText(request.text, request.url);
+        await saveText(request.text, request.url, request.tag);
         sendResponse({ success: true });
       } catch (error) {
         sendResponse({ success: false, error: error.message });
