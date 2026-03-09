@@ -72,7 +72,7 @@ function getAuthToken() {
 
 // --- Google Docs API: Append Text ---
 
-async function appendToDoc(token, docId, text, sourceUrl, tag) {
+async function appendToDoc(token, docId, text, sourceUrl, tag, originalText) {
   // Read user preferences (default: both enabled)
   const prefs = await new Promise((resolve) => {
     chrome.storage.sync.get(["includeUrl", "includeTimestamp"], (result) => {
@@ -101,8 +101,21 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
   }
 
   const header = headerParts.length > 0 ? headerParts.join(" - ") + "\n\n" : "";
+  const prefix = `${separator}${header}`;
 
-  const content = `${separator}${header}${text}\n`;
+  // Check if this is an edited save with changes
+  const hasEdits = originalText && originalText.trim() !== text.trim();
+
+  let bodyText;
+  let diffSegments = null;
+  if (hasEdits) {
+    diffSegments = computeWordDiff(originalText, text);
+    bodyText = diffSegments.map((s) => s.text).join("");
+  } else {
+    bodyText = text;
+  }
+
+  const content = `${prefix}${bodyText}\n`;
 
   const requests = [
     {
@@ -113,15 +126,14 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
     },
   ];
 
-  // If URL is included, apply a hyperlink to the word "link"
+  // Apply hyperlink to "link" word
   if (prefs.includeUrl && sourceUrl) {
-    // Find the position of "link" in the inserted content (starts at index 1)
-    const linkWordIndex = content.indexOf("🔗 link") + "🔗 ".length + 1; // +1 for doc index 1
+    const linkWordIndex = content.indexOf("🔗 link") + "🔗 ".length + 1;
     requests.push({
       updateTextStyle: {
         range: {
           startIndex: linkWordIndex,
-          endIndex: linkWordIndex + 4, // "link" is 4 chars
+          endIndex: linkWordIndex + 4,
         },
         textStyle: {
           link: { url: sourceUrl },
@@ -129,6 +141,48 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
         fields: "link",
       },
     });
+  }
+
+  // Apply diff colors if text was edited
+  if (hasEdits && diffSegments) {
+    const bodyStartIndex = prefix.length + 1; // +1 for doc index
+    let offset = 0;
+    for (const seg of diffSegments) {
+      if (seg.type === "added") {
+        requests.push({
+          updateTextStyle: {
+            range: {
+              startIndex: bodyStartIndex + offset,
+              endIndex: bodyStartIndex + offset + seg.text.length,
+            },
+            textStyle: {
+              foregroundColor: {
+                color: { rgbColor: { red: 0.133, green: 0.545, blue: 0.133 } },
+              },
+              underline: true,
+            },
+            fields: "foregroundColor,underline",
+          },
+        });
+      } else if (seg.type === "removed") {
+        requests.push({
+          updateTextStyle: {
+            range: {
+              startIndex: bodyStartIndex + offset,
+              endIndex: bodyStartIndex + offset + seg.text.length,
+            },
+            textStyle: {
+              foregroundColor: {
+                color: { rgbColor: { red: 0.82, green: 0.1, blue: 0.1 } },
+              },
+              strikethrough: true,
+            },
+            fields: "foregroundColor,strikethrough",
+          },
+        });
+      }
+      offset += seg.text.length;
+    }
   }
 
   const response = await fetch(
@@ -153,7 +207,7 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
 
 // --- Central Save Logic ---
 
-async function saveText(text, sourceUrl, tag) {
+async function saveText(text, sourceUrl, tag, originalText) {
   try {
     const token = await getAuthToken();
     const docId = await getTargetDocId();
@@ -161,7 +215,7 @@ async function saveText(text, sourceUrl, tag) {
       notify("No Google Doc configured. Click the extension icon to set one up.");
       throw new Error("No Google Doc configured.");
     }
-    await appendToDoc(token, docId, text, sourceUrl, tag);
+    await appendToDoc(token, docId, text, sourceUrl, tag, originalText);
     saveToHistory(text, sourceUrl, tag);
     notify("✅ Text saved to Google Docs!");
   } catch (error) {
@@ -229,7 +283,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "SAVE_TEXT") {
     (async () => {
       try {
-        await saveText(request.text, request.url, request.tag);
+        await saveText(request.text, request.url, request.tag, request.originalText);
         sendResponse({ success: true });
       } catch (error) {
         sendResponse({ success: false, error: error.message });
@@ -251,7 +305,94 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// --- Translation via Google Translate ---
+// --- Word-Level Diff ---
+
+function computeWordDiff(oldText, newText) {
+  const oldWords = tokenize(oldText);
+  const newWords = tokenize(newText);
+  const lcs = longestCommonSubsequence(oldWords, newWords);
+
+  const segments = [];
+  let oi = 0, ni = 0, li = 0;
+
+  while (oi < oldWords.length || ni < newWords.length) {
+    if (li < lcs.length) {
+      // Collect removed words (in old but not matching LCS)
+      while (oi < oldWords.length && oldWords[oi] !== lcs[li]) {
+        segments.push({ type: "removed", text: oldWords[oi] });
+        oi++;
+      }
+      // Collect added words (in new but not matching LCS)
+      while (ni < newWords.length && newWords[ni] !== lcs[li]) {
+        segments.push({ type: "added", text: newWords[ni] });
+        ni++;
+      }
+      // Common word
+      if (li < lcs.length) {
+        segments.push({ type: "same", text: lcs[li] });
+        oi++;
+        ni++;
+        li++;
+      }
+    } else {
+      // Remaining old words are removed
+      while (oi < oldWords.length) {
+        segments.push({ type: "removed", text: oldWords[oi] });
+        oi++;
+      }
+      // Remaining new words are added
+      while (ni < newWords.length) {
+        segments.push({ type: "added", text: newWords[ni] });
+        ni++;
+      }
+    }
+  }
+
+  // Merge consecutive segments of the same type
+  const merged = [];
+  for (const seg of segments) {
+    if (merged.length > 0 && merged[merged.length - 1].type === seg.type) {
+      merged[merged.length - 1].text += seg.text;
+    } else {
+      merged.push({ ...seg });
+    }
+  }
+
+  return merged;
+}
+
+function tokenize(text) {
+  // Split into words and whitespace tokens to preserve spacing
+  return text.match(/\S+|\s+/g) || [];
+}
+
+function longestCommonSubsequence(a, b) {
+  const m = a.length, n = b.length;
+  // Build LCS length table
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1] + 1
+        : Math.max(dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  // Backtrack to get LCS
+  const result = [];
+  let i = m, j = n;
+  while (i > 0 && j > 0) {
+    if (a[i - 1] === b[j - 1]) {
+      result.unshift(a[i - 1]);
+      i--;
+      j--;
+    } else if (dp[i - 1][j] > dp[i][j - 1]) {
+      i--;
+    } else {
+      j--;
+    }
+  }
+  return result;
+}
 
 async function translateText(text, targetLang) {
   const url =

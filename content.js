@@ -609,7 +609,7 @@ function showEditModal(x, y, selectedText) {
     modalSaveBtn.disabled = true;
 
     chrome.runtime.sendMessage(
-      { type: "SAVE_TEXT", text: editedText, url: window.location.href, tag },
+      { type: "SAVE_TEXT", text: editedText, originalText: selectedText, url: window.location.href, tag },
       (response) => {
         if (response?.success) {
           modalSaveBtn.textContent = "Saved ✓";
