@@ -75,10 +75,11 @@ function getAuthToken() {
 async function appendToDoc(token, docId, text, sourceUrl, tag, originalText) {
   // Read user preferences (default: both enabled)
   const prefs = await new Promise((resolve) => {
-    chrome.storage.sync.get(["includeUrl", "includeTimestamp"], (result) => {
+    chrome.storage.sync.get(["includeUrl", "includeTimestamp", "showDiffColors"], (result) => {
       resolve({
         includeUrl: result.includeUrl !== false,
         includeTimestamp: result.includeTimestamp !== false,
+        showDiffColors: result.showDiffColors !== false,
       });
     });
   });
@@ -103,8 +104,8 @@ async function appendToDoc(token, docId, text, sourceUrl, tag, originalText) {
   const header = headerParts.length > 0 ? headerParts.join(" - ") + "\n\n" : "";
   const prefix = `${separator}${header}`;
 
-  // Check if this is an edited save with changes
-  const hasEdits = originalText && originalText.trim() !== text.trim();
+  // Check if this is an edited save with diff colors enabled
+  const hasEdits = prefs.showDiffColors && originalText && originalText.trim() !== text.trim();
 
   let bodyText;
   let diffSegments = null;

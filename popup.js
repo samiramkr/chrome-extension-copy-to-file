@@ -34,6 +34,7 @@ const clearHistoryBtn = document.getElementById("clear-history-btn");
 const toggleUrl = document.getElementById("toggle-url");
 const toggleTimestamp = document.getElementById("toggle-timestamp");
 const toggleTagPrompt = document.getElementById("toggle-tag-prompt");
+const toggleDiffColors = document.getElementById("toggle-diff-colors");
 
 const shortcutKeys = document.getElementById("shortcut-keys");
 const changeShortcutLink = document.getElementById("change-shortcut-link");
@@ -179,10 +180,11 @@ async function showConnectedState(token) {
   loadHistory();
 
   // Load toggle preferences (default: both enabled)
-  chrome.storage.sync.get(["includeUrl", "includeTimestamp", "promptForTag"], (result) => {
+  chrome.storage.sync.get(["includeUrl", "includeTimestamp", "promptForTag", "showDiffColors"], (result) => {
     toggleUrl.checked = result.includeUrl !== false;
     toggleTimestamp.checked = result.includeTimestamp !== false;
     toggleTagPrompt.checked = result.promptForTag !== false;
+    toggleDiffColors.checked = result.showDiffColors !== false;
   });
 }
 
@@ -456,6 +458,10 @@ toggleTimestamp.addEventListener("change", () => {
 
 toggleTagPrompt.addEventListener("change", () => {
   chrome.storage.sync.set({ promptForTag: toggleTagPrompt.checked });
+});
+
+toggleDiffColors.addEventListener("change", () => {
+  chrome.storage.sync.set({ showDiffColors: toggleDiffColors.checked });
 });
 
 // --- Keyboard Shortcut ---
