@@ -132,36 +132,48 @@ body {
 
 /* --- Doc Info --- */
 
-.doc-info {
-  background: #f8faf8;
-  border: 1px solid #e0e8e0;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 12px;
+.doc-select {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: auto;
 }
 
-.doc-info label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #888;
+.doc-select:focus {
+  border-color: #4285f4;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.15);
 }
 
-.doc-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 4px 0;
+.doc-select option {
+  padding: 4px 0;
+}
+
+.doc-select option.action-option {
+  color: #4285f4;
+  font-style: italic;
 }
 
 .doc-link {
+  display: inline-block;
   font-size: 12px;
   color: #4285f4;
   text-decoration: none;
+  margin-top: 6px;
 }
 
 .doc-link:hover {
   text-decoration: underline;
+}
+
+.manual-connect {
+  margin-top: 10px;
 }
 
 /* --- Input Group --- */

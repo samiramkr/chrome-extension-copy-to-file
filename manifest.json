@@ -11,12 +11,14 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://docs.googleapis.com/*"
+    "https://docs.googleapis.com/*",
+    "https://www.googleapis.com/*"
   ],
   "oauth2": {
     "client_id": "42938059327-if9ht49cdkj94lelpr2sandjrq5fj28h.apps.googleusercontent.com",
     "scopes": [
-      "https://www.googleapis.com/auth/documents"
+      "https://www.googleapis.com/auth/documents",
+      "https://www.googleapis.com/auth/drive.readonly"
     ]
   },
   "background": {

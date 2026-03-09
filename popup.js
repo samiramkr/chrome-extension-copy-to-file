@@ -14,13 +14,14 @@ const authStatus = document.getElementById("auth-status");
 const authBtn = document.getElementById("auth-btn");
 
 const connectedSection = document.getElementById("connected-section");
-const docInfo = document.getElementById("doc-info");
-const docTitle = document.getElementById("doc-title");
+const docSelect = document.getElementById("doc-select");
 const docLink = document.getElementById("doc-link");
 
+const manualConnect = document.getElementById("manual-connect");
 const docInput = document.getElementById("doc-input");
 const saveDocBtn = document.getElementById("save-doc-btn");
 
+const createDocSection = document.getElementById("create-doc-section");
 const newDocTitle = document.getElementById("new-doc-title");
 const createDocBtn = document.getElementById("create-doc-btn");
 
@@ -112,9 +113,12 @@ saveDocBtn.addEventListener("click", async () => {
     const token = await getToken();
     const info = await getDocInfo(token, docId);
 
-    // Save to storage
     await saveTargetDoc(info.docId, info.title);
-    updateDocInfoUI(info.title, info.docId);
+    await addToRecentDocs(info.docId, info.title);
+    await loadRecentDocs();
+    docSelect.value = info.docId;
+    updateDocLink(info.docId);
+    manualConnect.classList.add("hidden");
     showMessage("success", `Connected to "${info.title}"`);
     docInput.value = "";
   } catch (error) {
@@ -137,9 +141,12 @@ createDocBtn.addEventListener("click", async () => {
     const token = await getToken();
     const info = await createDoc(token, title);
 
-    // Save to storage
     await saveTargetDoc(info.docId, info.title);
-    updateDocInfoUI(info.title, info.docId);
+    await addToRecentDocs(info.docId, info.title);
+    await loadRecentDocs();
+    docSelect.value = info.docId;
+    updateDocLink(info.docId);
+    createDocSection.classList.add("hidden");
     showMessage("success", `Created and connected "${info.title}"`);
     newDocTitle.value = "";
   } catch (error) {
@@ -156,10 +163,14 @@ async function showConnectedState(token) {
   authSection.classList.add("hidden");
   connectedSection.classList.remove("hidden");
 
-  // Load saved doc info
-  chrome.storage.sync.get(["targetDocId", "targetDocTitle"], (result) => {
+  // Load recent docs into dropdown
+  await loadRecentDocs();
+
+  // Select the saved target doc
+  chrome.storage.sync.get(["targetDocId"], (result) => {
     if (result.targetDocId) {
-      updateDocInfoUI(result.targetDocTitle || "Untitled", result.targetDocId);
+      docSelect.value = result.targetDocId;
+      updateDocLink(result.targetDocId);
     }
   });
 
@@ -176,18 +187,159 @@ async function showConnectedState(token) {
 function showSignedOutState() {
   authSection.classList.remove("hidden");
   connectedSection.classList.add("hidden");
-  docInfo.classList.add("hidden");
   authStatus.textContent = "Not connected";
   authStatus.classList.remove("connected");
   authBtn.disabled = false;
   authBtn.textContent = "Sign in with Google";
 }
 
-function updateDocInfoUI(title, docId) {
-  docInfo.classList.remove("hidden");
-  docTitle.textContent = title;
-  docLink.href = `https://docs.google.com/document/d/${docId}/edit`;
+function updateDocLink(docId) {
+  if (docId && docId !== "__connect__" && docId !== "__create__") {
+    docLink.href = `https://docs.google.com/document/d/${docId}/edit`;
+    docLink.classList.remove("hidden");
+  } else {
+    docLink.classList.add("hidden");
+  }
 }
+
+// --- Recent Docs Dropdown ---
+
+async function loadRecentDocs() {
+  try {
+    const token = await getToken();
+
+    // Fetch last 5 Google Docs from Drive API
+    const response = await fetch(
+      "https://www.googleapis.com/drive/v3/files?" +
+        new URLSearchParams({
+          q: "mimeType='application/vnd.google-apps.document' and trashed=false",
+          orderBy: "modifiedByMeTime desc",
+          pageSize: "5",
+          fields: "files(id,name)",
+        }),
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (!response.ok) throw new Error("Failed to fetch docs");
+
+    const data = await response.json();
+    const driveDocs = (data.files || []).map((f) => ({ docId: f.id, title: f.name }));
+
+    // Also merge in any locally-stored recent docs (in case user connected one that isn't in top 5)
+    const stored = await getRecentDocs();
+    const merged = mergeDocs(driveDocs, stored);
+
+    populateDropdown(merged);
+  } catch (error) {
+    console.warn("Could not load recent docs:", error);
+    // Fall back to locally stored recent docs
+    const stored = await getRecentDocs();
+    if (stored.length > 0) {
+      populateDropdown(stored);
+    } else {
+      docSelect.innerHTML = '<option value="" disabled selected>No docs found</option>';
+      addDropdownActions();
+    }
+  }
+}
+
+function populateDropdown(docs) {
+  docSelect.innerHTML = "";
+
+  if (docs.length === 0) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = "No docs yet — create or connect one";
+    docSelect.appendChild(placeholder);
+  }
+
+  docs.forEach((doc) => {
+    const opt = document.createElement("option");
+    opt.value = doc.docId;
+    opt.textContent = doc.title;
+    docSelect.appendChild(opt);
+  });
+
+  addDropdownActions();
+}
+
+function addDropdownActions() {
+  // Separator
+  const sep = document.createElement("option");
+  sep.disabled = true;
+  sep.textContent = "────────────";
+  docSelect.appendChild(sep);
+
+  // Connect by URL
+  const connectOpt = document.createElement("option");
+  connectOpt.value = "__connect__";
+  connectOpt.textContent = "📎 Connect by URL…";
+  connectOpt.className = "action-option";
+  docSelect.appendChild(connectOpt);
+
+  // Create new
+  const createOpt = document.createElement("option");
+  createOpt.value = "__create__";
+  createOpt.textContent = "✚ Create new doc…";
+  createOpt.className = "action-option";
+  docSelect.appendChild(createOpt);
+}
+
+function mergeDocs(driveDocs, storedDocs) {
+  const seen = new Set();
+  const result = [];
+  for (const doc of [...driveDocs, ...storedDocs]) {
+    if (!seen.has(doc.docId)) {
+      seen.add(doc.docId);
+      result.push(doc);
+    }
+  }
+  return result.slice(0, 7); // cap at 7 items
+}
+
+// --- Dropdown change handler ---
+
+docSelect.addEventListener("change", async () => {
+  const value = docSelect.value;
+
+  if (value === "__connect__") {
+    manualConnect.classList.remove("hidden");
+    createDocSection.classList.add("hidden");
+    docInput.focus();
+    // Reset select to current target
+    chrome.storage.sync.get(["targetDocId"], (r) => {
+      if (r.targetDocId) docSelect.value = r.targetDocId;
+    });
+    return;
+  }
+
+  if (value === "__create__") {
+    createDocSection.classList.remove("hidden");
+    manualConnect.classList.add("hidden");
+    newDocTitle.focus();
+    // Reset select to current target
+    chrome.storage.sync.get(["targetDocId"], (r) => {
+      if (r.targetDocId) docSelect.value = r.targetDocId;
+    });
+    return;
+  }
+
+  // Regular doc selected
+  manualConnect.classList.add("hidden");
+  createDocSection.classList.add("hidden");
+
+  const selectedOption = docSelect.options[docSelect.selectedIndex];
+  const title = selectedOption.textContent;
+
+  await saveTargetDoc(value, title);
+  await addToRecentDocs(value, title);
+  updateDocLink(value);
+  showMessage("success", `Now saving to "${title}"`);
+});
 
 // --- Storage Helpers ---
 
@@ -197,6 +349,27 @@ function saveTargetDoc(docId, title) {
       { targetDocId: docId, targetDocTitle: title },
       resolve
     );
+  });
+}
+
+function addToRecentDocs(docId, title) {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["recentDocs"], (result) => {
+      let docs = result.recentDocs || [];
+      // Remove if already exists, then prepend
+      docs = docs.filter((d) => d.docId !== docId);
+      docs.unshift({ docId, title });
+      if (docs.length > 5) docs.length = 5;
+      chrome.storage.sync.set({ recentDocs: docs }, resolve);
+    });
+  });
+}
+
+function getRecentDocs() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["recentDocs"], (result) => {
+      resolve(result.recentDocs || []);
+    });
   });
 }
 

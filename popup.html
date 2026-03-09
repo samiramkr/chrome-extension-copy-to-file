@@ -22,35 +22,39 @@
 
     <!-- Connected Section (hidden by default) -->
     <div id="connected-section" class="section hidden">
-      <!-- Current Doc Info -->
-      <div id="doc-info" class="doc-info hidden">
-        <label>Saving to:</label>
-        <p id="doc-title" class="doc-title">—</p>
-        <a id="doc-link" href="#" target="_blank" class="doc-link">Open in Google Docs ↗</a>
-      </div>
-
-      <!-- Set Target Doc -->
+      <!-- Target Doc Selector -->
       <div class="input-group">
-        <label for="doc-input">Google Doc URL or ID:</label>
-        <input
-          type="text"
-          id="doc-input"
-          placeholder="Paste Google Doc URL or document ID"
-        />
-        <button id="save-doc-btn" class="btn btn-secondary">Connect Doc</button>
+        <label for="doc-select">Save to:</label>
+        <select id="doc-select" class="doc-select">
+          <option value="" disabled selected>Loading your docs…</option>
+        </select>
+        <a id="doc-link" href="#" target="_blank" class="doc-link hidden">Open in Google Docs ↗</a>
       </div>
 
-      <div class="divider"></div>
+      <!-- Connect by URL (collapsed by default) -->
+      <div id="manual-connect" class="manual-connect hidden">
+        <div class="input-group">
+          <label for="doc-input">Google Doc URL or ID:</label>
+          <input
+            type="text"
+            id="doc-input"
+            placeholder="Paste Google Doc URL or document ID"
+          />
+          <button id="save-doc-btn" class="btn btn-secondary">Connect Doc</button>
+        </div>
+      </div>
 
       <!-- Create New Doc -->
-      <div class="input-group">
-        <label for="new-doc-title">Or create a new doc:</label>
-        <input
-          type="text"
-          id="new-doc-title"
-          placeholder="My Saved Snippets"
-        />
-        <button id="create-doc-btn" class="btn btn-secondary">Create Doc</button>
+      <div id="create-doc-section" class="manual-connect hidden">
+        <div class="input-group">
+          <label for="new-doc-title">New document title:</label>
+          <input
+            type="text"
+            id="new-doc-title"
+            placeholder="My Saved Snippets"
+          />
+          <button id="create-doc-btn" class="btn btn-secondary">Create Doc</button>
+        </div>
       </div>
 
       <div class="divider"></div>
