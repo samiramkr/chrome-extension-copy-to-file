@@ -87,10 +87,10 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
   let headerParts = [];
 
   if (tag) {
-    headerParts.push(`[${tag}]`);
+    headerParts.push(`🏷️ [${tag}]`);
   }
   if (prefs.includeTimestamp) {
-    headerParts.push(`Saved on ${new Date().toLocaleString()}`);
+    headerParts.push(`📌 Saved on ${new Date().toLocaleString()}`);
   }
   if (prefs.includeUrl) {
     headerParts.push(`🔗 ${sourceUrl}`);
