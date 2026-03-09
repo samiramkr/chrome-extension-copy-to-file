@@ -71,23 +71,28 @@ chrome-extension-copy-to-file/
 - [x] Append selected text to a single Google Doc
 - [x] Include source URL and timestamp with each snippet
 - [x] Success/error notification
-- [ ] Google Cloud project setup & OAuth Client ID
-- [ ] End-to-end testing in Chrome
+- [x] Google Cloud project setup & OAuth Client ID
+- [x] End-to-end testing in Chrome
 
 ### Phase 2 — Enhancements
 
 - [x] Choose which Google Doc to save to
 - [x] Create a new doc from popup
 - [x] Organize saved texts with headings/horizontal dividers
-- [ ] Keyboard shortcut (e.g., `Ctrl+Shift+S`)
-- [ ] Floating "Save" button near text selection
+- [x] Keyboard shortcut (`Ctrl+Shift+S` / `Cmd+Shift+S`)
+- [x] Floating "Save" button near text selection
+- [x] Save history in popup (last 20 saves)
+- [ ] Toggles to include/exclude URL and timestamp (#13)
+- [ ] Customizable keyboard shortcut (#9)
 
 ### Phase 3 — Future
 
-- [ ] Translate text before saving (Google Translate API)
-- [ ] Tag/categorize saved snippets
-- [ ] View saved snippets history in popup
-- [ ] Export snippets as markdown
+- [ ] Translate text before saving — Google Translate API (#6)
+- [ ] Tag/categorize saved snippets (#7)
+- [ ] Export snippets as Markdown (#8)
+- [ ] Edit selected text before saving (#10)
+- [ ] Save locally with destination choice (#11)
+- [ ] Export to different file formats — Excel, CSV, PDF, etc. (#12)
 
 ---
 
@@ -104,9 +109,9 @@ chrome-extension-copy-to-file/
 
 ## 📝 Implementation Steps
 
-### Step 1 — Google Cloud Project Setup ⏳
-- [ ] Create project, enable APIs, get OAuth Client ID
-- [ ] Replace placeholder in `manifest.json`
+### Step 1 — Google Cloud Project Setup ✅
+- [x] Create project, enable APIs, get OAuth Client ID
+- [x] Replace placeholder in `manifest.json`
 
 ### Step 2 — Scaffold Extension ✅
 - [x] `manifest.json` — Manifest V3 with permissions & OAuth config
@@ -133,23 +138,32 @@ chrome-extension-copy-to-file/
 - [x] Show auth status
 - [x] Allow user to set/change target Google Doc
 - [x] Create new Google Doc from popup
-- [ ] Show recent save history
+- [x] Show recent save history
 
-### Step 6 — Polish & Test ⏳
+### Step 6 — Polish & Test ✅
 - [x] Error handling (auth, API, no doc configured)
-- [ ] Edge cases (no text selected, auth expired, etc.)
+- [x] Edge cases (no text selected, auth expired, etc.)
 - [x] Icons and branding
-- [ ] Load unpacked in Chrome and test end-to-end
+- [x] Load unpacked in Chrome and test end-to-end
 
 ---
 
 ## 📌 Status
 
-**Current Phase:** Scaffolding complete — ready for Google Cloud setup & testing  
-**Last Updated:** March 8, 2026
+**Current Phase:** Phase 2 complete — working on remaining enhancements & Phase 3  
+**Last Updated:** March 9, 2026
 
-### Next Steps
-1. Set up Google Cloud project & get OAuth Client ID
-2. Replace `YOUR_CLIENT_ID` in `manifest.json`
-3. Load unpacked extension in Chrome (`chrome://extensions`)
-4. Test end-to-end: select text → right-click → save to Google Docs
+### Completed
+- ✅ Phase 1 MVP — fully functional
+- ✅ Phase 2 core — keyboard shortcut, floating button, save history
+- ✅ Google Cloud setup & end-to-end testing
+
+### Open Issues
+- #6 — Translate text before saving
+- #7 — Tag/categorize snippets
+- #8 — Export as Markdown
+- #9 — Customizable keyboard shortcut
+- #10 — Edit text before saving
+- #11 — Save locally with destination choice
+- #12 — Export to different file formats
+- #13 — Toggles for URL/timestamp inclusion
