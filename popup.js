@@ -36,15 +36,6 @@ const toggleTimestamp = document.getElementById("toggle-timestamp");
 const shortcutKeys = document.getElementById("shortcut-keys");
 const changeShortcutLink = document.getElementById("change-shortcut-link");
 
-const destDocs = document.getElementById("dest-docs");
-const destLocal = document.getElementById("dest-local");
-const destBoth = document.getElementById("dest-both");
-
-const localSnippetsSection = document.getElementById("local-snippets-section");
-const localSnippetsList = document.getElementById("local-snippets-list");
-const exportSnippetsBtn = document.getElementById("export-snippets-btn");
-const clearSnippetsBtn = document.getElementById("clear-snippets-btn");
-
 // --- Initialize ---
 
 document.addEventListener("DOMContentLoaded", init);
@@ -180,18 +171,6 @@ async function showConnectedState(token) {
     toggleUrl.checked = result.includeUrl !== false;
     toggleTimestamp.checked = result.includeTimestamp !== false;
   });
-
-  // Load destination preference (default: docs)
-  chrome.storage.sync.get(["saveDestination"], (result) => {
-    const dest = result.saveDestination || "docs";
-    if (dest === "local") destLocal.checked = true;
-    else if (dest === "both") destBoth.checked = true;
-    else destDocs.checked = true;
-    updateLocalSnippetsVisibility(dest);
-  });
-
-  // Load local snippets
-  loadLocalSnippets();
 }
 
 function showSignedOutState() {
@@ -312,85 +291,6 @@ chrome.commands.getAll((commands) => {
 changeShortcutLink.addEventListener("click", (e) => {
   e.preventDefault();
   chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
-});
-
-// --- Save Destination ---
-
-function onDestinationChange() {
-  const dest = document.querySelector('input[name="destination"]:checked').value;
-  chrome.storage.sync.set({ saveDestination: dest });
-  updateLocalSnippetsVisibility(dest);
-}
-
-function updateLocalSnippetsVisibility(dest) {
-  if (dest === "local" || dest === "both") {
-    localSnippetsSection.classList.remove("hidden");
-  } else {
-    localSnippetsSection.classList.add("hidden");
-  }
-}
-
-destDocs.addEventListener("change", onDestinationChange);
-destLocal.addEventListener("change", onDestinationChange);
-destBoth.addEventListener("change", onDestinationChange);
-
-// --- Local Snippets ---
-
-function loadLocalSnippets() {
-  chrome.storage.local.get(["localSnippets"], (result) => {
-    renderLocalSnippets(result.localSnippets || []);
-  });
-}
-
-function renderLocalSnippets(snippets) {
-  if (snippets.length === 0) {
-    localSnippetsList.innerHTML = '<p class="history-empty">No local snippets yet.</p>';
-    return;
-  }
-
-  localSnippetsList.innerHTML = snippets
-    .map((entry) => {
-      const time = formatTimeAgo(new Date(entry.timestamp));
-      const hostname = getHostname(entry.url);
-      const preview = escapeHtml(
-        entry.text.length > 100 ? entry.text.substring(0, 100) + "\u2026" : entry.text
-      );
-      return `
-        <div class="history-item">
-          <div class="history-item-text">${preview}</div>
-          <div class="history-item-meta">
-            <a class="history-item-url" href="${escapeHtml(entry.url)}" target="_blank" title="${escapeHtml(entry.url)}">${escapeHtml(hostname)}</a>
-            <span class="history-item-time">${time}</span>
-          </div>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-clearSnippetsBtn.addEventListener("click", () => {
-  chrome.storage.local.set({ localSnippets: [] }, () => {
-    renderLocalSnippets([]);
-    showMessage("info", "Local snippets cleared.");
-  });
-});
-
-exportSnippetsBtn.addEventListener("click", () => {
-  chrome.storage.local.get(["localSnippets"], (result) => {
-    const snippets = result.localSnippets || [];
-    if (snippets.length === 0) {
-      showMessage("info", "No snippets to export.");
-      return;
-    }
-    const blob = new Blob([JSON.stringify(snippets, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `snippets-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showMessage("success", `Exported ${snippets.length} snippet(s).`);
-  });
 });
 
 // --- Utility Helpers ---
