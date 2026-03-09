@@ -93,7 +93,7 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
     headerParts.push(`📌 Saved on ${new Date().toLocaleString()}`);
   }
   if (prefs.includeUrl) {
-    headerParts.push(`🔗 ${sourceUrl}`);
+    headerParts.push(`🔗 link`);
   }
 
   const header = headerParts.length > 0 ? headerParts.join(" - ") + "\n\n" : "";
@@ -108,6 +108,24 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
       },
     },
   ];
+
+  // If URL is included, apply a hyperlink to the word "link"
+  if (prefs.includeUrl && sourceUrl) {
+    // Find the position of "link" in the inserted content (starts at index 1)
+    const linkWordIndex = content.indexOf("🔗 link") + "🔗 ".length + 1; // +1 for doc index 1
+    requests.push({
+      updateTextStyle: {
+        range: {
+          startIndex: linkWordIndex,
+          endIndex: linkWordIndex + 4, // "link" is 4 chars
+        },
+        textStyle: {
+          link: { url: sourceUrl },
+        },
+        fields: "link",
+      },
+    });
+  }
 
   const response = await fetch(
     `https://docs.googleapis.com/v1/documents/${docId}:batchUpdate`,
