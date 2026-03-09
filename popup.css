@@ -357,3 +357,46 @@ body {
 .toggle-option span {
   user-select: none;
 }
+
+/* --- Keyboard Shortcut Row --- */
+
+.shortcut-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shortcut-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.shortcut-row .preferences-label {
+  margin-bottom: 0;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 3px 8px;
+  font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+  font-size: 12px;
+  color: #555;
+  background: #f4f4f4;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 #ccc;
+  line-height: 1.3;
+}
+
+.shortcut-link {
+  font-size: 12px;
+  color: #4285f4;
+  text-decoration: none;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.shortcut-link:hover {
+  text-decoration: underline;
+}

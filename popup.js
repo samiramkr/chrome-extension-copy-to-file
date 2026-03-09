@@ -33,6 +33,9 @@ const clearHistoryBtn = document.getElementById("clear-history-btn");
 const toggleUrl = document.getElementById("toggle-url");
 const toggleTimestamp = document.getElementById("toggle-timestamp");
 
+const shortcutKeys = document.getElementById("shortcut-keys");
+const changeShortcutLink = document.getElementById("change-shortcut-link");
+
 // --- Initialize ---
 
 document.addEventListener("DOMContentLoaded", init);
@@ -271,6 +274,23 @@ toggleUrl.addEventListener("change", () => {
 
 toggleTimestamp.addEventListener("change", () => {
   chrome.storage.sync.set({ includeTimestamp: toggleTimestamp.checked });
+});
+
+// --- Keyboard Shortcut ---
+
+// Display the actual shortcut from Chrome's command registry
+chrome.commands.getAll((commands) => {
+  const saveCmd = commands.find((c) => c.name === "save-selection");
+  if (saveCmd && saveCmd.shortcut) {
+    shortcutKeys.textContent = saveCmd.shortcut;
+  } else {
+    shortcutKeys.textContent = "Not set";
+  }
+});
+
+changeShortcutLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
 });
 
 // --- Utility Helpers ---
