@@ -33,6 +33,7 @@ const clearHistoryBtn = document.getElementById("clear-history-btn");
 
 const toggleUrl = document.getElementById("toggle-url");
 const toggleTimestamp = document.getElementById("toggle-timestamp");
+const toggleTagPrompt = document.getElementById("toggle-tag-prompt");
 
 const shortcutKeys = document.getElementById("shortcut-keys");
 const changeShortcutLink = document.getElementById("change-shortcut-link");
@@ -178,9 +179,10 @@ async function showConnectedState(token) {
   loadHistory();
 
   // Load toggle preferences (default: both enabled)
-  chrome.storage.sync.get(["includeUrl", "includeTimestamp"], (result) => {
+  chrome.storage.sync.get(["includeUrl", "includeTimestamp", "promptForTag"], (result) => {
     toggleUrl.checked = result.includeUrl !== false;
     toggleTimestamp.checked = result.includeTimestamp !== false;
+    toggleTagPrompt.checked = result.promptForTag !== false;
   });
 }
 
@@ -450,6 +452,10 @@ toggleUrl.addEventListener("change", () => {
 
 toggleTimestamp.addEventListener("change", () => {
   chrome.storage.sync.set({ includeTimestamp: toggleTimestamp.checked });
+});
+
+toggleTagPrompt.addEventListener("change", () => {
+  chrome.storage.sync.set({ promptForTag: toggleTagPrompt.checked });
 });
 
 // --- Keyboard Shortcut ---

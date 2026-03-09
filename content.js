@@ -235,12 +235,30 @@ function showFloatingButton(x, y, selectedText) {
     el.addEventListener("mouseup", (e) => e.stopPropagation());
   });
 
-  // Save button click — open tag prompt then save
+  // Save button click — check if tag prompt is enabled
   saveBtn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     removeFloatingButton();
-    showTagPrompt(selectedText);
+
+    chrome.storage.sync.get(["promptForTag"], (result) => {
+      if (result.promptForTag !== false) {
+        showTagPrompt(selectedText);
+      } else {
+        // Save directly without tag prompt
+        showToast("Saving…");
+        chrome.runtime.sendMessage(
+          { type: "SAVE_TEXT", text: selectedText, url: window.location.href, tag: "" },
+          (response) => {
+            if (response?.success) {
+              showToast("✅ Text saved to Google Docs!");
+            } else {
+              showToast("❌ Failed to save");
+            }
+          }
+        );
+      }
+    });
   });
 
   // Edit button click — open edit modal
