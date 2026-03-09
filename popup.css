@@ -358,6 +358,33 @@ body {
   user-select: none;
 }
 
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  cursor: pointer;
+  font-size: 13px;
+  color: #444;
+}
+
+.radio-option input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #4285f4;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.radio-option span {
+  user-select: none;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* --- Keyboard Shortcut Row --- */
 
 .shortcut-row {

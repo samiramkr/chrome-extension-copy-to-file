@@ -30,22 +30,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     return;
   }
 
-  try {
-    const token = await getAuthToken();
-    const docId = await getTargetDocId();
-
-    if (!docId) {
-      notify("No Google Doc configured. Click the extension icon to set one up.");
-      return;
-    }
-
-    await appendToDoc(token, docId, selectedText, tab.url);
-    saveToHistory(selectedText, tab.url);
-    notify("✅ Text saved to Google Docs!");
-  } catch (error) {
-    console.error("Save to Google Docs failed:", error);
-    notify(`❌ Failed to save: ${error.message}`);
-  }
+  await saveText(selectedText, tab.url);
 });
 
 // --- Keyboard Shortcut Handler ---
@@ -68,22 +53,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     return;
   }
 
-  try {
-    const token = await getAuthToken();
-    const docId = await getTargetDocId();
-
-    if (!docId) {
-      notify("No Google Doc configured. Click the extension icon to set one up.");
-      return;
-    }
-
-    await appendToDoc(token, docId, selectedText, tab.url);
-    notify("✅ Text saved to Google Docs!");
-    saveToHistory(selectedText, tab.url);
-  } catch (error) {
-    console.error("Save to Google Docs failed:", error);
-    notify(`❌ Failed to save: ${error.message}`);
-  }
+  await saveText(selectedText, tab.url);
 });
 
 // --- Authentication ---
@@ -157,6 +127,76 @@ async function appendToDoc(token, docId, text, sourceUrl) {
   return response.json();
 }
 
+// --- Central Save Logic ---
+
+async function saveText(text, sourceUrl) {
+  const dest = await getSaveDestination();
+
+  const results = [];
+
+  // Save to Google Docs if destination is "docs" or "both"
+  if (dest === "docs" || dest === "both") {
+    try {
+      const token = await getAuthToken();
+      const docId = await getTargetDocId();
+      if (!docId) {
+        throw new Error("No Google Doc configured. Click the extension icon to set one up.");
+      }
+      await appendToDoc(token, docId, text, sourceUrl);
+      results.push("Google Docs");
+    } catch (error) {
+      if (dest === "docs") {
+        // Docs-only mode: propagate the error
+        notify(`❌ Failed to save: ${error.message}`);
+        throw error;
+      }
+      // Both mode: log but continue with local
+      console.warn("Google Docs save failed, saved locally:", error.message);
+    }
+  }
+
+  // Save locally if destination is "local" or "both"
+  if (dest === "local" || dest === "both") {
+    await saveLocally(text, sourceUrl);
+    results.push("local storage");
+  }
+
+  saveToHistory(text, sourceUrl);
+
+  if (results.length > 0) {
+    notify(`✅ Saved to ${results.join(" & ")}!`);
+  }
+}
+
+function getSaveDestination() {
+  return new Promise((resolve) => {
+    chrome.storage.sync.get(["saveDestination"], (result) => {
+      resolve(result.saveDestination || "docs");
+    });
+  });
+}
+
+/**
+ * Save the full snippet text locally in chrome.storage.local.
+ */
+function saveLocally(text, url) {
+  return new Promise((resolve) => {
+    const entry = {
+      text,
+      url,
+      timestamp: new Date().toISOString(),
+    };
+
+    chrome.storage.local.get(["localSnippets"], (result) => {
+      const snippets = result.localSnippets || [];
+      snippets.unshift(entry);
+      // Keep last 200 local snippets
+      if (snippets.length > 200) snippets.length = 200;
+      chrome.storage.local.set({ localSnippets: snippets }, resolve);
+    });
+  });
+}
+
 // --- Storage Helpers ---
 
 function getTargetDocId() {
@@ -214,14 +254,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === "SAVE_TEXT") {
     (async () => {
       try {
-        const token = await getAuthToken();
-        const docId = await getTargetDocId();
-        if (!docId) {
-          sendResponse({ success: false, error: "No target doc configured." });
-          return;
-        }
-        await appendToDoc(token, docId, request.text, request.url);
-        saveToHistory(request.text, request.url);
+        await saveText(request.text, request.url);
         sendResponse({ success: true });
       } catch (error) {
         sendResponse({ success: false, error: error.message });
