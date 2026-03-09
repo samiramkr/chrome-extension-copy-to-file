@@ -87,10 +87,14 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
   let headerParts = [];
 
   if (tag) {
-    headerParts.push(`🏷️ [${tag}]`);
+    headerParts.push(`🏷️ ${tag}`);
   }
   if (prefs.includeTimestamp) {
-    headerParts.push(`📌 Saved on ${new Date().toLocaleString()}`);
+    const now = new Date();
+    const time = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      + " · "
+      + now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    headerParts.push(`📌 ${time}`);
   }
   if (prefs.includeUrl) {
     headerParts.push(`🔗 link`);
