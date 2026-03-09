@@ -212,4 +212,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     })();
     return true;
   }
+
+  if (request.type === "TRANSLATE_TEXT") {
+    (async () => {
+      try {
+        const translated = await translateText(request.text, request.targetLang);
+        sendResponse({ success: true, translatedText: translated });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
 });
+
+// --- Translation via Google Translate ---
+
+async function translateText(text, targetLang) {
+  const url =
+    "https://translate.googleapis.com/translate_a/single?" +
+    new URLSearchParams({
+      client: "gtx",
+      sl: "auto",
+      tl: targetLang,
+      dt: "t",
+      q: text,
+    });
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Translation service unavailable");
+  }
+
+  const data = await response.json();
+  // data[0] is an array of [translatedChunk, originalChunk, ...]
+  const translated = data[0].map((segment) => segment[0]).join("");
+  if (!translated) throw new Error("No translation returned");
+  return translated;
+}

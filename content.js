@@ -99,7 +99,7 @@ function showFloatingButton(x, y, selectedText) {
     transition: "background-color 0.15s",
   });
 
-  // --- Edit button (right half) ---
+  // --- Edit button (middle) ---
   const editBtn = document.createElement("div");
   editBtn.innerHTML = `<span>✎</span>`;
   Object.assign(editBtn.style, {
@@ -117,8 +117,26 @@ function showFloatingButton(x, y, selectedText) {
     transition: "background-color 0.15s",
   });
 
+  // --- Translate button (right) ---
+  const translateBtn = document.createElement("div");
+  translateBtn.innerHTML = `<span>🌐</span>`;
+  Object.assign(translateBtn.style, {
+    display: "flex",
+    alignItems: "center",
+    padding: "6px 10px",
+    backgroundColor: "#3367D6",
+    color: "#fff",
+    fontSize: "14px",
+    fontFamily: FONT,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    lineHeight: "1",
+    borderLeft: "1px solid rgba(255,255,255,0.25)",
+    transition: "background-color 0.15s",
+  });
+
   // Position above the cursor
-  const btnWidth = 110;
+  const btnWidth = 150;
   const btnHeight = 32;
   let posX = x - btnWidth / 2;
   let posY = y - btnHeight - 10;
@@ -130,8 +148,8 @@ function showFloatingButton(x, y, selectedText) {
   floatingBtn.style.left = `${posX}px`;
   floatingBtn.style.top = `${posY}px`;
 
-  // Prevent propagation on both halves
-  [saveBtn, editBtn].forEach((el) => {
+  // Prevent propagation on all pill segments
+  [saveBtn, editBtn, translateBtn].forEach((el) => {
     el.addEventListener("mousedown", (e) => e.stopPropagation());
     el.addEventListener("mouseup", (e) => e.stopPropagation());
   });
@@ -166,14 +184,25 @@ function showFloatingButton(x, y, selectedText) {
     showEditModal(x, y, selectedText);
   });
 
+  // Translate button click — open translate modal
+  translateBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    removeFloatingButton();
+    showTranslateModal(x, y, selectedText);
+  });
+
   // Hover effects
   saveBtn.addEventListener("mouseenter", () => { saveBtn.style.backgroundColor = "#3367D6"; });
   saveBtn.addEventListener("mouseleave", () => { saveBtn.style.backgroundColor = "#4285F4"; });
   editBtn.addEventListener("mouseenter", () => { editBtn.style.backgroundColor = "#2a56c0"; });
   editBtn.addEventListener("mouseleave", () => { editBtn.style.backgroundColor = "#3367D6"; });
+  translateBtn.addEventListener("mouseenter", () => { translateBtn.style.backgroundColor = "#2a56c0"; });
+  translateBtn.addEventListener("mouseleave", () => { translateBtn.style.backgroundColor = "#3367D6"; });
 
   floatingBtn.appendChild(saveBtn);
   floatingBtn.appendChild(editBtn);
+  floatingBtn.appendChild(translateBtn);
   document.body.appendChild(floatingBtn);
 
   requestAnimationFrame(() => {
@@ -396,6 +425,375 @@ function removeEditModal() {
     editModal.remove();
     editModal = null;
   }
+}
+
+// --- Translation Modal ---
+
+const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "de", name: "German" },
+  { code: "it", name: "Italian" },
+  { code: "pt", name: "Portuguese" },
+  { code: "ru", name: "Russian" },
+  { code: "zh", name: "Chinese" },
+  { code: "ja", name: "Japanese" },
+  { code: "ko", name: "Korean" },
+  { code: "ar", name: "Arabic" },
+  { code: "hi", name: "Hindi" },
+  { code: "tr", name: "Turkish" },
+  { code: "nl", name: "Dutch" },
+  { code: "fa", name: "Persian" },
+  { code: "pl", name: "Polish" },
+  { code: "sv", name: "Swedish" },
+  { code: "vi", name: "Vietnamese" },
+  { code: "th", name: "Thai" },
+  { code: "uk", name: "Ukrainian" },
+];
+
+function showTranslateModal(x, y, selectedText) {
+  removeEditModal();
+
+  const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+  editModal = document.createElement("div");
+  editModal.id = "save-to-gdocs-translate-modal";
+
+  // Backdrop
+  Object.assign(editModal.style, {
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100vw",
+    height: "100vh",
+    zIndex: "2147483647",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    opacity: "0",
+    transition: "opacity 0.15s ease",
+  });
+
+  // Modal card
+  const card = document.createElement("div");
+  Object.assign(card.style, {
+    background: "#fff",
+    borderRadius: "12px",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+    padding: "16px",
+    width: "420px",
+    maxWidth: "90vw",
+    maxHeight: "85vh",
+    display: "flex",
+    flexDirection: "column",
+    fontFamily: FONT,
+    overflow: "auto",
+  });
+
+  // Title
+  const title = document.createElement("div");
+  title.textContent = "Translate & Save";
+  Object.assign(title.style, {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: "12px",
+  });
+
+  // Language picker row
+  const langRow = document.createElement("div");
+  Object.assign(langRow.style, {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    marginBottom: "12px",
+  });
+
+  const langLabel = document.createElement("span");
+  langLabel.textContent = "Translate to:";
+  Object.assign(langLabel.style, {
+    fontSize: "13px",
+    color: "#555",
+    fontFamily: FONT,
+    whiteSpace: "nowrap",
+  });
+
+  const langSelect = document.createElement("select");
+  Object.assign(langSelect.style, {
+    flex: "1",
+    padding: "6px 10px",
+    fontSize: "13px",
+    fontFamily: FONT,
+    border: "1px solid #ddd",
+    borderRadius: "6px",
+    outline: "none",
+    cursor: "pointer",
+  });
+
+  LANGUAGES.forEach((lang) => {
+    const opt = document.createElement("option");
+    opt.value = lang.code;
+    opt.textContent = lang.name;
+    langSelect.appendChild(opt);
+  });
+
+  // Default to user's last choice or Spanish
+  const lastLang = localStorage.getItem("gdocs-translate-lang") || "es";
+  langSelect.value = lastLang;
+
+  const translateNowBtn = document.createElement("button");
+  translateNowBtn.textContent = "Translate";
+  Object.assign(translateNowBtn.style, {
+    padding: "6px 14px",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: FONT,
+    border: "none",
+    borderRadius: "6px",
+    background: "#4285F4",
+    color: "#fff",
+    cursor: "pointer",
+    transition: "background-color 0.15s",
+    whiteSpace: "nowrap",
+  });
+  translateNowBtn.addEventListener("mouseenter", () => { translateNowBtn.style.backgroundColor = "#3367D6"; });
+  translateNowBtn.addEventListener("mouseleave", () => { translateNowBtn.style.backgroundColor = "#4285F4"; });
+
+  langRow.appendChild(langLabel);
+  langRow.appendChild(langSelect);
+  langRow.appendChild(translateNowBtn);
+
+  // Original text (read-only)
+  const origLabel = document.createElement("div");
+  origLabel.textContent = "Original:";
+  Object.assign(origLabel.style, {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    marginBottom: "4px",
+  });
+
+  const origBox = document.createElement("div");
+  origBox.textContent = selectedText;
+  Object.assign(origBox.style, {
+    padding: "10px 12px",
+    fontSize: "13px",
+    fontFamily: FONT,
+    lineHeight: "1.5",
+    color: "#333",
+    border: "1px solid #e0e0e0",
+    borderRadius: "8px",
+    background: "#f9f9f9",
+    maxHeight: "120px",
+    overflowY: "auto",
+    marginBottom: "12px",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+  });
+
+  // Translation output
+  const transLabel = document.createElement("div");
+  transLabel.textContent = "Translation:";
+  Object.assign(transLabel.style, {
+    fontSize: "11px",
+    fontWeight: "600",
+    color: "#888",
+    textTransform: "uppercase",
+    letterSpacing: "0.5px",
+    marginBottom: "4px",
+  });
+
+  const transBox = document.createElement("div");
+  transBox.textContent = "Click \"Translate\" to see translation";
+  Object.assign(transBox.style, {
+    padding: "10px 12px",
+    fontSize: "13px",
+    fontFamily: FONT,
+    lineHeight: "1.5",
+    color: "#999",
+    border: "1px solid #e0e0e0",
+    borderRadius: "8px",
+    background: "#fff",
+    minHeight: "48px",
+    maxHeight: "120px",
+    overflowY: "auto",
+    marginBottom: "12px",
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    fontStyle: "italic",
+  });
+
+  let translatedText = "";
+  let translatedLangName = "";
+
+  // Translate action
+  async function doTranslate() {
+    const targetLang = langSelect.value;
+    localStorage.setItem("gdocs-translate-lang", targetLang);
+    translatedLangName = LANGUAGES.find((l) => l.code === targetLang)?.name || targetLang;
+
+    translateNowBtn.textContent = "Translating…";
+    translateNowBtn.disabled = true;
+    translateNowBtn.style.opacity = "0.7";
+    transBox.textContent = "Translating…";
+    transBox.style.color = "#999";
+    transBox.style.fontStyle = "italic";
+
+    try {
+      const result = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: "TRANSLATE_TEXT", text: selectedText, targetLang },
+          (response) => {
+            if (response?.success) resolve(response.translatedText);
+            else reject(new Error(response?.error || "Translation failed"));
+          }
+        );
+      });
+
+      translatedText = result;
+      transBox.textContent = result;
+      transBox.style.color = "#333";
+      transBox.style.fontStyle = "normal";
+      modalSaveBtn.disabled = false;
+      modalSaveBtn.style.opacity = "1";
+    } catch (err) {
+      transBox.textContent = `Error: ${err.message}`;
+      transBox.style.color = "#EA4335";
+      transBox.style.fontStyle = "normal";
+    } finally {
+      translateNowBtn.textContent = "Translate";
+      translateNowBtn.disabled = false;
+      translateNowBtn.style.opacity = "1";
+    }
+  }
+
+  translateNowBtn.addEventListener("click", doTranslate);
+
+  // Button row
+  const btnRow = document.createElement("div");
+  Object.assign(btnRow.style, {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "8px",
+    marginTop: "4px",
+  });
+
+  // Cancel button
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  Object.assign(cancelBtn.style, {
+    padding: "8px 16px",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: FONT,
+    border: "1px solid #ddd",
+    borderRadius: "6px",
+    background: "#fff",
+    color: "#666",
+    cursor: "pointer",
+    transition: "background-color 0.15s",
+  });
+  cancelBtn.addEventListener("mouseenter", () => { cancelBtn.style.backgroundColor = "#f5f5f5"; });
+  cancelBtn.addEventListener("mouseleave", () => { cancelBtn.style.backgroundColor = "#fff"; });
+
+  // Save button (disabled until translation is done)
+  const modalSaveBtn = document.createElement("button");
+  modalSaveBtn.textContent = "Save with Translation";
+  modalSaveBtn.disabled = true;
+  Object.assign(modalSaveBtn.style, {
+    padding: "8px 20px",
+    fontSize: "13px",
+    fontWeight: "500",
+    fontFamily: FONT,
+    border: "none",
+    borderRadius: "6px",
+    background: "#4285F4",
+    color: "#fff",
+    cursor: "pointer",
+    transition: "background-color 0.15s",
+    opacity: "0.5",
+  });
+  modalSaveBtn.addEventListener("mouseenter", () => { if (!modalSaveBtn.disabled) modalSaveBtn.style.backgroundColor = "#3367D6"; });
+  modalSaveBtn.addEventListener("mouseleave", () => { modalSaveBtn.style.backgroundColor = "#4285F4"; });
+
+  // Cancel action
+  cancelBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    removeEditModal();
+  });
+
+  // Save action — send both original and translated text
+  modalSaveBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!translatedText) return;
+
+    modalSaveBtn.textContent = "Saving…";
+    modalSaveBtn.style.opacity = "0.7";
+    modalSaveBtn.disabled = true;
+
+    const combinedText = `${selectedText}\n\n🌐 ${translatedLangName} translation:\n${translatedText}`;
+
+    chrome.runtime.sendMessage(
+      { type: "SAVE_TEXT", text: combinedText, url: window.location.href },
+      (response) => {
+        if (response?.success) {
+          modalSaveBtn.textContent = "Saved ✓";
+          modalSaveBtn.style.backgroundColor = "#34A853";
+          setTimeout(() => removeEditModal(), 600);
+          showToast("✅ Text + translation saved to Google Docs!");
+        } else {
+          modalSaveBtn.textContent = "Failed";
+          modalSaveBtn.style.backgroundColor = "#EA4335";
+          modalSaveBtn.style.opacity = "1";
+          modalSaveBtn.disabled = false;
+          setTimeout(() => {
+            modalSaveBtn.textContent = "Save with Translation";
+            modalSaveBtn.style.backgroundColor = "#4285F4";
+          }, 1500);
+        }
+      }
+    );
+  });
+
+  // Keyboard: Escape to cancel
+  const onKeyDown = (e) => {
+    if (e.key === "Escape") {
+      removeEditModal();
+      document.removeEventListener("keydown", onKeyDown);
+    }
+  };
+  document.addEventListener("keydown", onKeyDown);
+
+  // Prevent events from leaking
+  editModal.addEventListener("mousedown", (e) => e.stopPropagation());
+  editModal.addEventListener("mouseup", (e) => e.stopPropagation());
+
+  // Click backdrop to cancel
+  editModal.addEventListener("click", (e) => {
+    if (e.target === editModal) removeEditModal();
+  });
+
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(modalSaveBtn);
+
+  card.appendChild(title);
+  card.appendChild(langRow);
+  card.appendChild(origLabel);
+  card.appendChild(origBox);
+  card.appendChild(transLabel);
+  card.appendChild(transBox);
+  card.appendChild(btnRow);
+  editModal.appendChild(card);
+  document.body.appendChild(editModal);
+
+  // Animate in
+  requestAnimationFrame(() => {
+    editModal.style.opacity = "1";
+  });
 }
 
 // --- Toast Notification ---
