@@ -84,20 +84,19 @@ async function appendToDoc(token, docId, text, sourceUrl, tag) {
   });
 
   const separator = "\n———————————————————————————\n";
-  let header = "";
+  let headerParts = [];
 
   if (tag) {
-    header += `🏷️ [${tag}]\n`;
+    headerParts.push(`[${tag}]`);
   }
   if (prefs.includeTimestamp) {
-    header += `📌 Saved on ${new Date().toLocaleString()}\n`;
+    headerParts.push(`Saved on ${new Date().toLocaleString()}`);
   }
   if (prefs.includeUrl) {
-    header += `🔗 ${sourceUrl}\n`;
+    headerParts.push(`🔗 ${sourceUrl}`);
   }
-  if (header) {
-    header += "\n";
-  }
+
+  const header = headerParts.length > 0 ? headerParts.join(" - ") + "\n\n" : "";
 
   const content = `${separator}${header}${text}\n`;
 
