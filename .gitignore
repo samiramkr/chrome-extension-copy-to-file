@@ -1,1 +1,10 @@
 usecases.md
+
+# WXT / Build output
+node_modules/
+.output/
+.wxt/
+dist/
+
+# OS files
+.DS_Store
